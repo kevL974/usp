@@ -13,7 +13,8 @@ class CoinbaseProBank(Bank, ABC):
     NAME: str = 'CoinBase pro'
     URL: str = 'https://pro.coinbase.com/'
     API: str = 'https://api.exchange.coinbase.com/'  # 'https://api.pro.coinbase.com/'
-    TIME: str = 'GMT12:00:00'
+    TIME: str = ''
+    # 'GMT12:00:00'
 
     def __init__(self):
         super().__init__()
@@ -22,6 +23,7 @@ class CoinbaseProBank(Bank, ABC):
         return self._request(self._make_request('products'))
 
     def get_historical_data(self, currency: str, start: str, end: str, granularity: int) -> List:
+        granularity = 86400
         print(f'Request : {CoinbaseProBank.API}products/{currency}/candles?start={start}{CoinbaseProBank.TIME}'
               f'&end={end}{CoinbaseProBank.TIME}&granularity={granularity}')
         return self._request(self._make_request(

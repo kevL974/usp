@@ -186,12 +186,12 @@ class TimeMachine:
                 if last_op == 'buy':
                     if strategy.get_action('sell') == 'up':
                         if row[2] >= buy_rate + buy_rate * strategy.get_rate('sell') / 100:
-                            self._wallet.sell(self._wallet.getTotalCoins(), row[2], row[0], row[1], n)
+                            self._wallet.sell(self._wallet.get_total_coins(), row[2], row[0], row[1], n)
                             last_op = 'sell'
                             buy_rate = row[2]
                     if strategy.get_action('sell') == 'down':
                         if row[2] >= buy_rate - buy_rate * strategy.get_rate('sell') / 100:
-                            self._wallet.sell(self.wallet.getTotalCoins(), row[2], row[0], row[1], n)
+                            self._wallet.sell(self.wallet.get_total_coins(), row[2], row[0], row[1], n)
                             last_op = 'sell'
                             buy_rate = row[2]
                 elif last_op == 'sell':
