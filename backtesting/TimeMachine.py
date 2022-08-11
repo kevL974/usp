@@ -7,11 +7,11 @@ Created on Tue Oct 19 16:57:45 2021
 import sqlite3
 import matplotlib.pyplot as plt
 
-from usp.Bank import Bank
+from backtesting.Bank import Bank
 from typing import Callable, List
 from datetime import datetime, date, timedelta
-from usp.VirtualWallet import VirtualWallet
-from usp.Strategy import Strategy
+from backtesting.VirtualWallet import VirtualWallet
+from backtesting.Strategy import Strategy
 from sys import exit
 
 
@@ -179,7 +179,7 @@ class TimeMachine:
         n = 0
         for row in result.fetchall():
             if last_op is None:
-                self._wallet.buy(self._wallet.get_total_funds(), row[2], row[0], row[1], n)
+                self._wallet.buy(self._wallet.get_total_funds()*0.2, row[2], row[0], row[1], n)
                 buy_rate = row[2]
                 last_op = 'buy'
             else:
@@ -197,12 +197,12 @@ class TimeMachine:
                 elif last_op == 'sell':
                     if strategy.get_action('buy') == 'up':
                         if row[2] >= buy_rate + buy_rate * strategy.get_rate('buy') / 100:
-                            self._wallet.buy(self._wallet.get_total_funds(), row[2], row[0], row[1], n)
+                            self._wallet.buy(self._wallet.get_total_funds()*0.2, row[2], row[0], row[1], n)
                             last_op = 'buy'
                             buy_rate = row[2]
                     if strategy.get_action('buy') == 'down':
                         if row[2] >= buy_rate - buy_rate * strategy.get_rate('buy') / 100:
-                            self._wallet.buy(self._wallet.get_total_funds(), row[2], row[0], row[1], n)
+                            self._wallet.buy(self._wallet.get_total_funds()*0.2, row[2], row[0], row[1], n)
                             last_op = 'buy'
                             buy_rate = row[2]
 

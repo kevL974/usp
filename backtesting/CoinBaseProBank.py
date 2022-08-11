@@ -5,7 +5,7 @@ Created on Tue Oct 19 13:21:26 2021
 @author: kevL974
 """
 from abc import ABC
-from usp.Bank import Bank
+from backtesting.Bank import Bank
 from typing import Dict, List, Tuple
 
 
