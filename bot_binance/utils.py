@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import Tuple, Dict
-from pandas import DataFrame, to_datetime
+import pandas as pd
 
 import json
 
@@ -14,12 +14,12 @@ def read_api_keys(path: str) -> Tuple:
         return api_key, api_secret
 
 
-def create_frame_from_socket(klines: Dict) -> DataFrame:
-    frame = DataFrame([klines])
+def create_frame_from_socket(klines: Dict) -> pd.DataFrame:
+    frame = pd.DataFrame([klines])
     frame = frame.loc[:, ['T', 'o', 'h', 'l', 'c', 'v']]
     frame.rename(columns=COLUMNS_NAME_MAP, inplace=True)
     frame.set_index('Time', inplace=True)
-    frame.index = to_datetime(frame.index, unit='ms')
+    frame.index = pd.to_datetime(frame.index, unit='ms')
     frame = frame.astype('float')
     return frame
 
