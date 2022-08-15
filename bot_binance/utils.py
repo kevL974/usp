@@ -6,8 +6,8 @@ from pandas import DataFrame, to_datetime
 import json
 
 
-def read_api_keys() -> Tuple:
-    with open('./ressources/api.json', 'r') as f:
+def read_api_keys(path: str) -> Tuple:
+    with open(path, 'r') as f:
         doc = json.load(f)
         api_key = doc['API_DEMO_KEY']
         api_secret = doc['API_DEMO_SECRET']
@@ -22,6 +22,15 @@ def create_frame_from_socket(klines: Dict) -> DataFrame:
     frame.index = to_datetime(frame.index, unit='ms')
     frame = frame.astype('float')
     return frame
+
+
+def right_rounding(lot_size: float) -> int:
+    splitted = str(lot_size).split('.')
+
+    if float(splitted[0]) == 1:
+        return 0
+    else:
+        return len(splitted[1])
 
 
 COLUMNS_NAME_MAP = {'T': 'Time',

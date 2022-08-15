@@ -132,5 +132,5 @@ def bot(api_key: str, api_secret: str, testnet: bool = True):
         time.sleep(60)
 
 if __name__ == '__main__':
-    api_key, api_secret = read_api_keys()
-    bot(api_key, api_secret, testnet=True)
+        api_key, api_secret = read_api_keys('../ressources/api.json')
+        bot(api_key, api_secret, testnet=True)
