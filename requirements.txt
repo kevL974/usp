@@ -2,3 +2,4 @@ requests
 matplotlib
 python-binance
 pandas
+ta
