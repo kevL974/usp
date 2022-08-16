@@ -101,7 +101,7 @@ class Bot:
 
     def quantity_calc(self, symbol: str, investment: float) -> float:
         info = self.client.get_symbol_info(symbol=symbol)
-        lot_size = float([i for i in info['filters'] if i['filterType'] == 'LOT_SIZE'][0]['qtyMin'])
+        lot_size = float([i for i in info['filters'] if i['filterType'] == 'LOT_SIZE'][0]['minQty'])
         price = self.price_calc(symbol, 0.98)
         qty = round(investment / price, right_rounding(lot_size))
         return qty
