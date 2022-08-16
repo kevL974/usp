@@ -1,136 +1,76 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from bot_binance.Bot import Bot
+from bot_binance.utils import read_api_keys, OHLC_COLUMNS
+from strategies.Strategy import Sma200Rsi10Strategy
+from logging.handlers import TimedRotatingFileHandler
+
+import logging
+import logging.config
+import logging.handlers
+import argparse
+import configparser
 import time
 
-import ta
-from datetime import timedelta
-from binance import Client
-from binance.enums import *
-from typing import Dict
-from bot_binance.utils import read_api_keys, OHLC_COLUMNS
 
-import pandas as pd
-
-pos_dict={'in_position': False}
-def read_pos() -> pd.DataFrame:
-    return pd.read_csv('./ressources/position.csv')
-
-
-def init_wokspace(client: Client) -> pd.DataFrame:
-    df_symbol_info = pd.DataFrame(client.get_exchange_info()['symbols'])
-    df_pos = df_symbol_info[df_symbol_info.symbol.str.contains('USDT')][['symbol']]
-    df_pos['position'] = 0
-    df_pos['price'] = 0.0
-    df_pos['time'] = 'NA'
-    df_pos.to_csv('./ressources/position.csv')
-    return df_pos
-
-
-def get_historical_data(client: Client, coin: str, interval: str, ago: str):
-    data = client.get_historical_klines(coin, interval, ago)
-    frame = pd.DataFrame(data)
-    frame = frame[[0, 1, 2, 3, 4, 5]]
-    frame.columns = OHLC_COLUMNS
-    frame.drop(['Open', 'High', 'Low'], axis=1, inplace=True)
-    frame.set_index('Time', inplace=True)
-    frame.index = pd.to_datetime(frame.index, unit='ms')
-    frame = frame.astype('float')
-    return frame
+def init_logger_conf(path: str) -> None:
+    logging.config.fileConfig(path)
+    # formatter_debug = logging.Formatter('%(asctime)s -- %(name)s -- %(levelname)s -- %(message)s')
+    # formatter_info = logging.Formatter('%(asctime)s -- %(name)s -- %(levelname)s -- %(message)s')
+    #
+    # logger_debug = logging.getLogger('debug_log')
+    # handler_debug = logging.handlers.TimedRotatingFileHandler('/var/log/debug.log', when='s', interval=5, encoding='utf-8')
+    # handler_debug.setFormatter(formatter_debug)
+    # logger_debug.setLevel(logging.DEBUG)
+    # logger_debug.addHandler(handler_debug)
+    #
+    # logger_info = logging.getLogger('info_log')
+    # handler_info = logging.handlers.TimedRotatingFileHandler('/var/log/info.log', when='d', interval=7, encoding='utf-8')
+    # handler_info.setFormatter(formatter_info)
+    # logger_info.setLevel(logging.INFO)
+    # logger_info.addHandler(handler_info)
+    #
+    # logger_order = logging.getLogger('order_log')
+    # handler_info_order = logging.handlers.TimedRotatingFileHandler('/var/log/order.log', when='d', interval=7, encoding='utf-8')
+    # handler_info_order.setFormatter(formatter_info)
+    # logger_order.setLevel(logging.INFO)
+    # logger_order.addHandler(handler_info_order)
 
 
-def get_indicators(df: pd.DataFrame) -> pd.DataFrame:
-    df['SMA_200'] = ta.trend.sma_indicator(df.Close, window=200)
-    df['stochrsi_10'] = ta.momentum.stochrsi_k(df.Close, window=10)
-    df.dropna(inplace=True)
-    df['Buy'] = (df.Close > df.SMA_200) & (df.stochrsi_10 < 0.05)
-    return df
+def load_config(path: str) -> configparser.ConfigParser:
+    config_bot = configparser.ConfigParser()
+    config_bot.read(path)
+    return config_bot
 
-
-def price_calc(client: Client, symbol: str, limit: float) -> float:
-    raw_price = float(client.get_symbol_ticker(symbol=symbol)['price'])
-    dec_len = len(str(raw_price).split('.')[1])
-    price = raw_price * limit
-    return round(price, dec_len)
-
-
-def right_rounding(lot_size: float) -> int:
-    splitted = str(lot_size).split('.')
-
-    if float(splitted[0]) == 1:
-        return 0
-    else:
-        return len(splitted[1])
-
-
-def quantity_calc(client: Client, symbol: str,  investment: float) -> float:
-    info = client.get_symbol_info(symbol=symbol)
-    lot_size = float([i for i in info['filters'] if i['filterType'] == 'LOT_SIZE'][0]['QtyMin'])
-    price = price_calc(symbol)
-    qty = round(investment/price, right_rounding(lot_size))
-    return qty
-
-
-def buy(client: Client, symbol: str, investment: float) -> Dict:
-    order = client.order_limit_buy(symbol=symbol,
-                                   price=price_calc(client, symbol, 0.98),
-                                   quantity=quantity_calc(client, symbol, investment))
-    print(order)
-    pos_dict['in_position'] = True
-    return order
-
-
-def sell(client: Client, symbol: str,  qty: float) -> Dict:
-    order = client.create_order(symbol=symbol,
-                                 side=SIDE_SELL,
-                                 type=ORDER_TYPE_MARKET,
-                                 quantity=qty)
-    print(order)
-    pos_dict['in_position'] = False
-    return order
-
-
-def check_buy(df: pd.DataFrame) -> bool:
-    if not pos_dict['in_position']:
-        if df.Buy.values:
-            return True
-    else:
-        print('Already un position')
-        return False
-
-
-def check_sell(client: Client, symbol: str, order: Dict, df: pd.DataFrame):
-    order_status = client.get_order(symbol=symbol, orderId=order['orderId'])
-    if pos_dict['in_position']:
-        if order_status['status'] == 'NEW':
-            print('Buy limit order is still pending')
-        elif order_status['status'] == 'FILLED':
-            cond1_is_benef_tp = df.Close.values > float(order_status['price'])
-            cond2_is_benef_grows = pd.to_datetime('now') >= (pd.to_datetime(order_status['updateTime'], unit='ms') +
-                                                             timedelta(minutes=150))
-            #cond3 -> stop-loss
-            if cond1_is_benef_tp or cond2_is_benef_grows:
-                sell(client,symbol,order_status['origQty'])
-        else:
-            print('Currently not in position, no checks for selling')
-
-def bot(api_key: str, api_secret: str, testnet: bool = True):
-    client = Client(api_key, api_secret, testnet=testnet)
-    pos = None
-    try:
-        pos = read_pos()
-    except FileNotFoundError:
-        pos = init_wokspace(client)
-
-    while True:
-        for coin in pos.symbol:
-            hist_frame = get_historical_data(client, coin, Client.KLINE_INTERVAL_15MINUTE, "3000 minutes ago UTC")
-            df = get_indicators(hist_frame)
-            if check_buy(df):
-                current_order = buy(client, coin, 100)
-            try:
-                check_sell(client, coin, current_order, df)
-            except:
-                print(f'{coin} : Not an order yet')
-        time.sleep(60)
 
 if __name__ == '__main__':
-        api_key, api_secret = read_api_keys('../ressources/api.json')
-        bot(api_key, api_secret, testnet=True)
+
+    parser = argparse.ArgumentParser(description='Make some trades with Binance')
+    parser.add_argument('-c', '--config', help='path to bot configuration file.', type=str, required=True)
+    parser.add_argument('--testnet', help='use binance testnet platform', action='store_true')
+    parser.add_argument('--debug', help='activate debug mode', action='store_true')
+    args = parser.parse_args()
+
+    path_config = args.config
+    testnet_mode = args.testnet
+    debug_mode = args.debug
+
+    config = load_config(path_config)
+    logger_conf_path = config['logger']['path_conf_logger']
+
+    bot = None
+    if testnet_mode:
+        api_key = config['api_binance_demo']['api_key']
+        api_secret = config['api_binance_demo']['api_secret']
+        positions_path = config['api_binance_demo']['path']
+        bot = Bot(api_key, api_secret, positions_path, testnet=True)
+    else:
+        api_key = config['api_binance']['api_key']
+        api_secret = config['api_binance']['api_secret']
+        positions_path = config['api_binance']['path']
+        bot = Bot(api_key, api_secret, positions_path, testnet=False)
+
+    init_logger_conf(logger_conf_path)
+    bot.choose_strategy(Sma200Rsi10Strategy)
+    bot.run()

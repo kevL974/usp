@@ -21,6 +21,7 @@ class Strategy(ABC):
     @abstractmethod
     def apply_strategy(self, df: pd.DataFrame) -> pd.DataFrame:
         ...
+
     @abstractmethod
     def is_take_profit_condition(self, df: pd.DataFrame, order_status: Dict) -> bool:
         ...

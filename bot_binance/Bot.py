@@ -7,25 +7,30 @@ from bot_binance.utils import OHLC_COLUMNS, right_rounding, read_api_keys
 from strategies.Strategy import Strategy, Sma200Rsi10Strategy
 
 import pandas as pd
+import logging
+
+logger_info_order = logging.getLogger('logger_order')
+logger_info = logging.getLogger('logger_info')
 
 
 class Bot:
 
-    def __init__(self, api_key: str, api_secret: str, testnet: bool):
+    def __init__(self, api_key: str, api_secret: str, position_file: str, testnet: bool):
         self.client: Client = Client(api_key=api_key, api_secret=api_secret, testnet=testnet)
+        self.path_positions = position_file
         self.positions: pd.DataFrame = self.__initialisation()
         self._strat: Strategy = None
 
     def __initialisation(self) -> pd.DataFrame:
         try:
-            return pd.read_csv('../ressources/position.csv')
+            return pd.read_csv(self.path_positions)
         except FileNotFoundError:
             df_symbol_info = pd.DataFrame(self.client.get_exchange_info()['symbols'])
             df_pos = df_symbol_info[df_symbol_info.symbol.str.contains('USDT')][['symbol']]
             df_pos['position'] = 0
             df_pos['qty'] = 0.0
             df_pos['orderId'] = 'NA'
-            df_pos.to_csv('../ressources/position.csv', index=False)
+            df_pos.to_csv(self.path_positions, index=False)
             return df_pos
 
     def choose_strategy(self, strategy: Callable[[], Strategy]):
@@ -49,7 +54,9 @@ class Bot:
         order = self.client.order_limit_buy(symbol=symbol,
                                             price=self.price_calc(symbol, 0.98),
                                             quantity=self.quantity_calc(symbol, investment))
-        print(order)
+
+        logger_info_order.info(f'BUY orderId {order["orderId"]}: '
+                               f'{order["origQty"]} {order["symbol"]} for {order["price"]} ')
         self.change_positions(symbol, is_open=True, qty=float(order['origQty'], order_id=order['orderId']))
         return order
 
@@ -58,7 +65,10 @@ class Bot:
                                          side=SIDE_SELL,
                                          type=ORDER_TYPE_MARKET,
                                          quantity=qty)
-        print(order)
+
+        logger_info_order.info(f'SELL orderId {order["orderId"]}: '
+                               f'{order["origQty"]} {order["symbol"]} for {order["price"]} >'
+                               f' {float(order["origQty"]) * float(order["price"])}')
         self.change_positions(symbol, is_open=False, qty=0, order_id=order['orderId'])
         return order
 
@@ -68,20 +78,20 @@ class Bot:
             if df.Buy.values:
                 return True
         else:
-            print('Already un position')
+            logger_info.info('Already un position')
             return False
 
     def check_sell(self, symbol: str, df: pd.DataFrame):
         order_status = self.client.get_order(symbol=symbol, order_id=self.get_order_id(symbol))
         if self.is_open_position(symbol):
             if order_status['status'] == 'NEW':
-                print('Buy limit order is still pending')
+                logger_info.info('Buy limit order is still pending')
             elif order_status['status'] == 'FILLED':
 
                 if self._strat.is_take_profit_condition(df, order_status):
                     self.sell(symbol, order_status['origQty'])
             else:
-                print('Currently not in position, no checks for selling')
+                logger_info.info('Currently not in position, no checks for selling')
 
     def price_calc(self, symbol: str, limit: float) -> float:
         raw_price = float(self.client.get_symbol_ticker(symbol=symbol)['price'])
@@ -117,7 +127,7 @@ class Bot:
         self.write_positions()
 
     def write_positions(self) -> None:
-        self.positions.to_csv('../ressources/position.csv', index=False)
+        self.positions.to_csv(self.path_positions, index=False)
 
     def run(self):
         for coin in self.positions.symbol:
@@ -129,11 +139,6 @@ class Bot:
             try:
                 self.check_sell(coin, df)
             except:
-                print(f'{coin} : Not an order yet')
+                logger_info.info(f'{coin} : Not an order yet')
+                break
 
-
-if __name__ == '__main__':
-    api_key, api_secret = read_api_keys('../ressources/api.json')
-    sma200_rsi10_bot = Bot(api_key, api_secret, testnet=True)
-    sma200_rsi10_bot.choose_strategy(Sma200Rsi10Strategy)
-    sma200_rsi10_bot.run()
