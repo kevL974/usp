@@ -140,5 +140,3 @@ class Bot:
                 self.check_sell(coin, df)
             except:
                 logger_info.info(f'{coin} : Not an order yet')
-                break
-
