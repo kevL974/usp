@@ -57,7 +57,7 @@ class Bot:
 
         logger_info_order.info(f'BUY orderId {order["orderId"]}: '
                                f'{order["origQty"]} {order["symbol"]} for {order["price"]} ')
-        self.change_positions(symbol, is_open=True, qty=float(order['origQty'], order_id=order['orderId']))
+        self.change_positions(symbol, is_open=True, qty=float(order['origQty']), order_id=order['orderId'])
         return order
 
     def sell(self, symbol: str, qty: float) -> Dict:
@@ -67,8 +67,8 @@ class Bot:
                                          quantity=qty)
 
         logger_info_order.info(f'SELL orderId {order["orderId"]}: '
-                               f'{order["origQty"]} {order["symbol"]} for {order["price"]} >'
-                               f' {float(order["origQty"]) * float(order["price"])}')
+                               f'{order["origQty"]} {order["symbol"]} for {order["fills"][0]["price"]} >'
+                               f' {float(order["origQty"]) * float(order["fills"][0]["price"])}')
         self.change_positions(symbol, is_open=False, qty=0, order_id=order['orderId'])
         return order
 

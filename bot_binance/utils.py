@@ -25,7 +25,7 @@ def create_frame_from_socket(klines: Dict) -> pd.DataFrame:
 
 
 def right_rounding(lot_size: float) -> int:
-    splitted = str(lot_size).split('.')
+    splitted = format(lot_size, 'f').split('.')
 
     if float(splitted[0]) == 1:
         return 0
