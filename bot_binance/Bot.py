@@ -138,5 +138,6 @@ class Bot:
 
             try:
                 self.check_sell(coin, df)
+                logger_info_order.info(f'Current assets UDST = {self.client.get_asset_balance(asset="USDT")["free"]}')
             except:
                 logger_info.info(f'{coin} : Not an order yet')
