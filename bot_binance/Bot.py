@@ -19,6 +19,7 @@ class Bot:
         self.client: Client = Client(api_key=api_key, api_secret=api_secret, testnet=testnet)
         self.path_positions = position_file
         self.positions: pd.DataFrame = self.__initialisation()
+        self.positions['orderId'] = self.positions['orderId'].astype("string")
         self._strat: Strategy = None
 
     def __initialisation(self) -> pd.DataFrame:
