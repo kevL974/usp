@@ -24,7 +24,8 @@ class Bot:
 
     def __initialisation(self) -> pd.DataFrame:
         try:
-            return pd.read_csv(self.path_positions)
+            return pd.read_csv(self.path_positions,
+                               dtype={'symbol': str, 'position': int, 'qty': float, 'orderId': str})
         except FileNotFoundError:
             df_symbol_info = pd.DataFrame(self.client.get_exchange_info()['symbols'])
             df_pos = df_symbol_info[df_symbol_info.symbol.str.contains('USDT')][['symbol']]
@@ -83,7 +84,7 @@ class Bot:
             return False
 
     def check_sell(self, symbol: str, df: pd.DataFrame):
-        order_status = self.client.get_order(symbol=symbol, order_id=self.get_order_id(symbol))
+        order_status = self.client.get_order(symbol=symbol, orderId=self.get_order_id(symbol))
         if self.is_open_position(symbol):
             if order_status['status'] == 'NEW':
                 logger_info.info('Buy limit order is still pending')
@@ -108,13 +109,10 @@ class Bot:
         return qty
 
     def is_open_position(self, symbol: str) -> bool:
-        if self.positions.loc[self.positions['symbol'] == symbol, 'position'].values[0] == 1:
-            return True
-        else:
-            return False
+        return self.positions[(self.positions['symbol'] == symbol)]['position'].iloc[0] == 1
 
     def get_order_id(self, symbol: str) -> str:
-        return self.positions.loc[self.positions.symbol == symbol, 'orderId'][0]
+        return self.positions[(self.positions['symbol'] == symbol)]['orderId'].iloc[0]
 
     def change_positions(self, symbol: str, is_open: bool, qty: float, order_id: str) -> None:
         if is_open:
