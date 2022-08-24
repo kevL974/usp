@@ -27,8 +27,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt; fi
+        pip install -r requirements.txt
     - name: Test with unittest
       run: |
         cd ./tests
-        python -m unittest /home/kevin/PycharmProjects/usp/tests/TestBot.py
+        python -m unittest TestBot.py
