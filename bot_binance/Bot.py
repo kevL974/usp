@@ -79,6 +79,8 @@ class Bot:
         if not open_position:
             if df.Buy.values:
                 return True
+            else:
+                return False
         else:
             logger_info.info('Already un position')
             return False
@@ -96,10 +98,13 @@ class Bot:
                 logger_info.info('Currently not in position, no checks for selling')
 
     def price_calc(self, symbol: str, limit: float) -> float:
-        raw_price = float(self.client.get_symbol_ticker(symbol=symbol)['price'])
+        raw_price = self.get_raw_price(symbol)
         dec_len = len(str(raw_price).split('.')[1])
         price = raw_price * limit
         return round(price, dec_len)
+
+    def get_raw_price(self, symbol: str) -> float:
+        return float(self.client.get_symbol_ticker(symbol=symbol)['price'])
 
     def quantity_calc(self, symbol: str, investment: float) -> float:
         info = self.client.get_symbol_info(symbol=symbol)
