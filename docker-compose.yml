@@ -1,0 +1,8 @@
+version: "3.8"
+
+services:
+  app:
+    image: kevl974/usp:1.0
+    working_dir: /usr/src/app
+    volumes:
+      - ./:/usr/src/app
