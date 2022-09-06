@@ -48,6 +48,7 @@ jobs:
         file: ./Dockerfile
         push: true
         tags: ${{ secrets.DOCKER_HUB_USERNAME }}/usp:latest
+        platform: linux/arm/v7
         cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/usp:buildcache
         cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/usp:buildcache,mode=max
 
