@@ -7,6 +7,8 @@ COPY ./strategies/ ./strategies
 COPY main.py requirements.txt ./
 COPY ./entrypoint.sh ./
 
-RUN pip install --upgrade pip && pip install -r requirements.txt && chmod +x entrypoint.sh
+#RUN pip install --upgrade pip && pip install -r requirements.txt && chmod +x entrypoint.sh
+CMD ['/bin/bash', '-c','python3 -m pip install -r requirements.txt']
+CMD ['/bin/bash', '-c', 'chmod +x entrypoint.sh']
 
-CMD [ "/usr/src/app/entrypoint.sh" ]
+ENTRYPOINT [ "/usr/src/app/entrypoint.sh" ]
