@@ -1,12 +1,17 @@
 FROM python:latest
 
+ENV VIRTUAL_ENV=/opt/venv
+
 WORKDIR /usr/src/app
 
 COPY ./bot_binance/ ./bot_binance
 COPY ./strategies/ ./strategies
 COPY main.py requirements.txt ./
-COPY ./entrypoint.sh ./
 
-RUN pip install --upgrade pip && pip install -r requirements.txt && chmod +x entrypoint.sh
+RUN ["/bin/bash", "-c", "python -m venv $VIRTUAL_ENV"]
 
-CMD [ "/usr/src/app/entrypoint.sh" ]
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+CMD ["python3", "/usr/src/app/main.py" ]
