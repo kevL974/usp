@@ -1,7 +1,8 @@
-FROM 2000cubits/raspbian:bullseye.latest
+FROM python:3.9-slim-bullseye
 
 # Install dependencies
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+RUN apt-get update && apt-get -y upgrade
+RUN apt-get install -y \
     python3 \
     python3-dev \
     python3-pip \
